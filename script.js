@@ -24,6 +24,67 @@ local DEFAULT_CONFIG = {
     Credits = "YouTube: RN_TEAM"
 }
 
+-- Variáveis de controle
+local originalSize
+local minimizedSize = UDim2.new(0, 250, 0, 30)
+local isMinimized = false
+local Creditos
+
+-- Sistema de Drag
+local dragging, dragInput, dragStart, startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    MainFrame.Position = UDim2.new(
+        startPos.X.Scale, 
+        startPos.X.Offset + delta.X, 
+        startPos.Y.Scale, 
+        startPos.Y.Offset + delta.Y
+    )
+end
+
+local function connectDragEvents(frame)
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+end
+
+-- Auto-ajuste de altura
+local function ajustarAlturaJanela()
+    if not MainFrame or isMinimized then return end
+    
+    local alturaMinima = 220
+    local alturaMaxima = 400
+    local alturaConteudo = UIListLayout.AbsoluteContentSize.Y + 80
+    
+    local novaAltura = math.clamp(alturaConteudo, alturaMinima, alturaMaxima)
+    
+    local tween = TweenService:Create(
+        MainFrame,
+        TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {Size = UDim2.new(0, 250, 0, novaAltura)}
+    )
+    tween:Play()
+    
+    ContentContainer.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
+end
+
 -- Função de inicialização
 function RNUI:Init(config)
     config = config or {}
@@ -79,9 +140,8 @@ function RNUI:Init(config)
     ContentContainer.Position = UDim2.new(0, 5, 0, 35)
     ContentContainer.BackgroundTransparency = 1
     ContentContainer.BorderSizePixel = 0
-    ContentContainer.ScrollBarThickness = 0
-    ContentContainer.ScrollBarImageColor3 = Color3.fromRGB(0, 0, 0)
-    ContentContainer.ScrollBarImageTransparency = 1
+    ContentContainer.ScrollBarThickness = 5
+    ContentContainer.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
     ContentContainer.ClipsDescendants = true
     ContentContainer.Parent = MainFrame
     
@@ -90,7 +150,7 @@ function RNUI:Init(config)
     UIListLayout.Parent = ContentContainer
     
     -- Créditos
-    local Creditos = Instance.new("TextLabel")
+    Creditos = Instance.new("TextLabel")
     Creditos.Size = UDim2.new(1, 0, 0, 30)
     Creditos.Position = UDim2.new(0, 0, 1, -30)
     Creditos.BackgroundTransparency = 1
@@ -108,41 +168,7 @@ function RNUI:Init(config)
     BackgroundDrag.ZIndex = 0
     BackgroundDrag.Parent = MainFrame
     
-    -- Sistema de drag
-    local dragging, dragInput, dragStart, startPos
-    
-    local function update(input)
-        local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(
-            startPos.X.Scale, 
-            startPos.X.Offset + delta.X, 
-            startPos.Y.Scale, 
-            startPos.Y.Offset + delta.Y
-        )
-    end
-    
-    local function connectDragEvents(frame)
-        frame.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = true
-                dragStart = input.Position
-                startPos = MainFrame.Position
-                
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        dragging = false
-                    end
-                end)
-            end
-        end)
-        
-        frame.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                dragInput = input
-            end
-        end)
-    end
-    
+    -- Configurar drag
     connectDragEvents(TitleBar)
     connectDragEvents(BackgroundDrag)
     
@@ -153,9 +179,7 @@ function RNUI:Init(config)
     end)
     
     -- Sistema de minimizar
-    local isMinimized = false
-    local originalSize = MainFrame.Size:Clone()
-    local minimizedSize = UDim2.new(0, 250, 0, 30)
+    originalSize = MainFrame.Size:Clone()
     
     MinimizeButton.MouseButton1Click:Connect(function()
         isMinimized = not isMinimized
@@ -182,28 +206,17 @@ function RNUI:Init(config)
             Creditos.Visible = true
             BackgroundDrag.Visible = true
             MinimizeButton.Text = "-"
+            
+            -- Reajustar altura após restaurar
+            task.wait(0.3)
+            ajustarAlturaJanela()
         end
     end)
     
-    -- Auto-ajuste de altura
-    local function ajustarAlturaJanela()
-        local alturaMinima = 220
-        local alturaMaxima = 400
-        local alturaConteudo = UIListLayout.AbsoluteContentSize.Y + 80
-        
-        local novaAltura = math.clamp(alturaConteudo, alturaMinima, alturaMaxima)
-        
-        local tween = TweenService:Create(
-            MainFrame,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Size = UDim2.new(0, 250, 0, novaAltura)}
-        )
-        tween:Play()
-        
-        ContentContainer.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
-    end
-    
+    -- Conectar auto-ajuste
     UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(ajustarAlturaJanela)
+    
+    -- Ajuste inicial
     task.wait(0.1)
     ajustarAlturaJanela()
     
@@ -212,20 +225,25 @@ end
 
 -- Função para criar botão
 function RNUI:Button(text, callback)
+    if not ContentContainer then
+        warn("UI não inicializada. Chame RNUI:Init() primeiro.")
+        return
+    end
+    
     local Button = Instance.new("TextButton")
     Button.Size = UDim2.new(1, 0, 0, 35)
     Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     Button.Text = text
     Button.TextColor3 = Color3.fromRGB(255, 255, 255)
     Button.Font = Enum.Font.SourceSansBold
-    Button.TextSize = 18
-    Button.ZIndex = 1
+    Button.TextSize = 16
+    Button.ZIndex = 2
     Button.Parent = ContentContainer
     Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
     
     -- Efeitos hover
     Button.MouseEnter:Connect(function()
-        Button.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+        Button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
     end)
     
     Button.MouseLeave:Connect(function()
@@ -238,15 +256,24 @@ function RNUI:Button(text, callback)
     end
     
     table.insert(Elements, Button)
+    
+    -- Ajustar altura da janela
+    ajustarAlturaJanela()
+    
     return Button
 end
 
 -- Função para criar toggle
 function RNUI:Toggle(text, default, callback)
+    if not ContentContainer then
+        warn("UI não inicializada. Chame RNUI:Init() primeiro.")
+        return
+    end
+    
     local ToggleContainer = Instance.new("Frame")
     ToggleContainer.Size = UDim2.new(1, 0, 0, 30)
     ToggleContainer.BackgroundTransparency = 1
-    ToggleContainer.ZIndex = 1
+    ToggleContainer.ZIndex = 2
     ToggleContainer.Parent = ContentContainer
     
     local ToggleButton = Instance.new("TextButton")
@@ -255,16 +282,16 @@ function RNUI:Toggle(text, default, callback)
     ToggleButton.Text = text
     ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     ToggleButton.Font = Enum.Font.SourceSansBold
-    ToggleButton.TextSize = 18
+    ToggleButton.TextSize = 16
     ToggleButton.TextXAlignment = Enum.TextXAlignment.Left
-    ToggleButton.ZIndex = 1
+    ToggleButton.ZIndex = 2
     ToggleButton.Parent = ToggleContainer
     
     local ToggleBox = Instance.new("Frame")
     ToggleBox.Size = UDim2.new(0, 20, 0, 20)
     ToggleBox.Position = UDim2.new(1, -25, 0.5, -10)
     ToggleBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    ToggleBox.ZIndex = 1
+    ToggleBox.ZIndex = 2
     ToggleBox.Parent = ToggleButton
     Instance.new("UICorner", ToggleBox).CornerRadius = UDim.new(0, 4)
     
@@ -288,18 +315,27 @@ function RNUI:Toggle(text, default, callback)
     
     updateToggle()
     table.insert(Elements, ToggleContainer)
-    return ToggleContainer, ToggleState
+    
+    -- Ajustar altura da janela
+    ajustarAlturaJanela()
+    
+    return ToggleContainer
 end
 
 -- Função para criar dropdown
 function RNUI:Dropdown(text, options, default, callback)
+    if not ContentContainer then
+        warn("UI não inicializada. Chame RNUI:Init() primeiro.")
+        return
+    end
+    
     local DropdownButton = Instance.new("TextButton")
     DropdownButton.Size = UDim2.new(1, 0, 0, 35)
     DropdownButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     DropdownButton.Text = text .. ": " .. (default or options[1])
     DropdownButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     DropdownButton.Font = Enum.Font.SourceSansBold
-    DropdownButton.TextSize = 18
+    DropdownButton.TextSize = 16
     DropdownButton.ZIndex = 2
     DropdownButton.Parent = ContentContainer
     Instance.new("UICorner", DropdownButton).CornerRadius = UDim.new(0, 6)
@@ -325,8 +361,8 @@ function RNUI:Dropdown(text, options, default, callback)
     DropdownContainer.ClipsDescendants = true
     DropdownContainer.Visible = false
     DropdownContainer.ZIndex = 100
-    DropdownContainer.ScrollBarThickness = 0
-    DropdownContainer.ScrollBarImageTransparency = 1
+    DropdownContainer.ScrollBarThickness = 5
+    DropdownContainer.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
     DropdownContainer.Parent = ScreenGui
     Instance.new("UICorner", DropdownContainer).CornerRadius = UDim.new(0, 6)
     
@@ -352,7 +388,7 @@ function RNUI:Dropdown(text, options, default, callback)
         OptionButton.Text = option
         OptionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
         OptionButton.Font = Enum.Font.SourceSans
-        OptionButton.TextSize = 16
+        OptionButton.TextSize = 14
         OptionButton.ZIndex = 101
         OptionButton.Parent = DropdownContainer
         Instance.new("UICorner", OptionButton).CornerRadius = UDim.new(0, 4)
@@ -443,7 +479,7 @@ function RNUI:Dropdown(text, options, default, callback)
     -- Efeitos hover no botão principal
     DropdownButton.MouseEnter:Connect(function()
         if not isOpen then
-            DropdownButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+            DropdownButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
         end
     end)
     
@@ -454,11 +490,20 @@ function RNUI:Dropdown(text, options, default, callback)
     end)
     
     table.insert(Elements, DropdownButton)
+    
+    -- Ajustar altura da janela
+    ajustarAlturaJanela()
+    
     return DropdownButton
 end
 
 -- Função para criar label
 function RNUI:Label(text)
+    if not ContentContainer then
+        warn("UI não inicializada. Chame RNUI:Init() primeiro.")
+        return
+    end
+    
     local Label = Instance.new("TextLabel")
     Label.Size = UDim2.new(1, 0, 0, 25)
     Label.BackgroundTransparency = 1
@@ -470,11 +515,20 @@ function RNUI:Label(text)
     Label.Parent = ContentContainer
     
     table.insert(Elements, Label)
+    
+    -- Ajustar altura da janela
+    ajustarAlturaJanela()
+    
     return Label
 end
 
 -- Função para criar separador
 function RNUI:Separator()
+    if not ContentContainer then
+        warn("UI não inicializada. Chame RNUI:Init() primeiro.")
+        return
+    end
+    
     local Separator = Instance.new("Frame")
     Separator.Size = UDim2.new(1, 0, 0, 1)
     Separator.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
@@ -482,6 +536,10 @@ function RNUI:Separator()
     Separator.Parent = ContentContainer
     
     table.insert(Elements, Separator)
+    
+    -- Ajustar altura da janela
+    ajustarAlturaJanela()
+    
     return Separator
 end
 
@@ -502,11 +560,13 @@ end
 
 -- Função para mudar título
 function RNUI:SetTitle(newTitle)
-    if MainFrame and MainFrame:FindFirstChild("TitleBar") then
-        local titleBar = MainFrame.TitleBar
-        local titleLabel = titleBar:FindFirstChildOfClass("TextLabel")
-        if titleLabel then
-            titleLabel.Text = newTitle
+    if MainFrame then
+        local titleBar = MainFrame:FindFirstChildOfClass("Frame")
+        if titleBar then
+            local titleLabel = titleBar:FindFirstChildOfClass("TextLabel")
+            if titleLabel then
+                titleLabel.Text = newTitle
+            end
         end
     end
 end
