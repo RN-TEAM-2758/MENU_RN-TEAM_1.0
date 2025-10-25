@@ -481,6 +481,64 @@ function RNUI:Dropdown(text, options, default, callback)
     return DropdownButton
 end
 
+-- Adicionar esta função na sua UI Library
+function RNUI:TextBox(labelText, placeholder, callback)
+    if not ScrollFrame then
+        warn("UI não inicializada. Chame RNUI:Init() primeiro.")
+        return nil
+    end
+    
+    local TextContainer = Instance.new("Frame")
+    TextContainer.Size = UDim2.new(1, 0, 0, 30)
+    TextContainer.BackgroundTransparency = 1
+    TextContainer.Parent = ScrollFrame
+    
+    local TextLabel = Instance.new("TextLabel")
+    TextLabel.Size = UDim2.new(0.6, 0, 1, 0)
+    TextLabel.BackgroundTransparency = 1
+    TextLabel.Text = labelText
+    TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TextLabel.Font = Enum.Font.SourceSansBold
+    TextLabel.TextSize = 16
+    TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TextLabel.Parent = TextContainer
+    
+    local TextBox = Instance.new("TextBox")
+    TextBox.Size = UDim2.new(0.3, 0, 1, 0)
+    TextBox.Position = UDim2.new(0.65, 0, 0, 0)
+    TextBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    TextBox.Text = placeholder or ""
+    TextBox.PlaceholderText = placeholder or "Digite..."
+    TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TextBox.Font = Enum.Font.SourceSansBold
+    TextBox.TextSize = 16
+    TextBox.Parent = TextContainer
+    
+    local TextBoxCorner = Instance.new("UICorner")
+    TextBoxCorner.CornerRadius = UDim.new(0, 6)
+    TextBoxCorner.Parent = TextBox
+    
+    -- Efeitos hover
+    TextBox.MouseEnter:Connect(function()
+        TextBox.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    end)
+    
+    TextBox.MouseLeave:Connect(function()
+        TextBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    end)
+    
+    -- Callback quando perde foco
+    if type(callback) == "function" then
+        TextBox.FocusLost:Connect(function(enterPressed)
+            if enterPressed then
+                callback(TextBox.Text)
+            end
+        end)
+    end
+    
+    return TextContainer, TextBox
+end
+
 -- Função para criar label
 function RNUI:Label(text)
     if not ScrollFrame then
@@ -526,3 +584,4 @@ function RNUI:Destroy()
 end
 
 return RNUI
+
