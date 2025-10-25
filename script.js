@@ -371,7 +371,3 @@ local function CriarBotaoSelecao(textoInicial, opcoes, callback)
 
     return BotaoSelecao
 end
-
-UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(ajustarAlturaJanela)
-task.wait(0.1)
-ajustarAlturaJanela()
