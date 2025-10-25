@@ -1,73 +1,67 @@
--- UI Library por RN TEAM - VERSÃO CORRIGIDA
-local RN_UI = {}
+-- RN TEAM UI Library
+-- Load with: loadstring(game:HttpGet("https://raw.githubusercontent.com/RN-TEAM-2758/MENU_RN-TEAM_1.0/refs/heads/main/library.lua"))()
 
--- Serviços
 local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
--- Variáveis globais da UI
-local LocalPlayer = Players.LocalPlayer
-local ScreenGui, Frame, ContentContainer, UIListLayout
-local elementos = {}
+local RNLibrary = {}
+local windows = {}
 
--- Configuração de dragging
-local dragging, dragInput, dragStart, startPos
+-- Função para criar uma nova janela (suporte a múltiplas janelas se necessário)
+function RNLibrary:CreateWindow(config)
+    config = config or {}
+    local title = config.Title or "RN TEAM"
+    local size = config.Size or UDim2.new(0, 250, 0, 220)
+    local position = config.Position or UDim2.new(0.35, 0, 0.3, 0)
 
-function RN_UI:CreateWindow(nome, tamanho, posicao)
-    -- Esperar o player carregar
-    if not LocalPlayer then
-        LocalPlayer = Players.LocalPlayer
-    end
-    
-    -- Criar a GUI principal
-    ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "RNTEAM_UI"
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "RNTeamGui_" .. tostring(math.random(1000, 9999))
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
     ScreenGui.ResetOnSpawn = false
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-    -- Frame principal
-    Frame = Instance.new("Frame")
-    Frame.Size = tamanho or UDim2.new(0, 250, 0, 220)
-    Frame.Position = posicao or UDim2.new(0.35, 0, 0.3, 0)
+    local dragging
+    local dragInput
+    local dragStart
+    local startPos
+
+    local Frame = Instance.new("Frame")
+    Frame.Name = "MainFrame"
+    Frame.Size = size
+    Frame.Position = position
     Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     Frame.BorderSizePixel = 0
     Frame.Parent = ScreenGui
-    Frame.ZIndex = 1
-    
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 8)
-    UICorner.Parent = Frame
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 8)
+    frameCorner.Parent = Frame
 
-    -- Title Bar
     local TitleBar = Instance.new("Frame")
+    TitleBar.Name = "TitleBar"
     TitleBar.Size = UDim2.new(1, 0, 0, 30)
     TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     TitleBar.BorderSizePixel = 0
     TitleBar.Parent = Frame
-    TitleBar.ZIndex = 2
-    
-    local TitleBarCorner = Instance.new("UICorner")
-    TitleBarCorner.CornerRadius = UDim.new(0, 8)
-    TitleBarCorner.Parent = TitleBar
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 8)
+    titleCorner.Parent = TitleBar
 
-    -- Título
     local Titulo = Instance.new("TextLabel")
+    Titulo.Name = "Title"
     Titulo.Size = UDim2.new(0.8, 0, 1, 0)
     Titulo.Position = UDim2.new(0.1, 0, 0, 0)
     Titulo.BackgroundTransparency = 1
-    Titulo.Text = nome or "RN TEAM"
+    Titulo.Text = title
     Titulo.TextColor3 = Color3.fromRGB(255, 255, 255)
     Titulo.Font = Enum.Font.SourceSansBold
     Titulo.TextSize = 16
     Titulo.TextXAlignment = Enum.TextXAlignment.Center
     Titulo.Parent = TitleBar
-    Titulo.ZIndex = 3
 
-    -- Botão Minimizar
     local MinimizeButton = Instance.new("TextButton")
+    MinimizeButton.Name = "MinimizeButton"
     MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
     MinimizeButton.Position = UDim2.new(1, -30, 0, 0)
     MinimizeButton.BackgroundTransparency = 1
@@ -76,26 +70,26 @@ function RN_UI:CreateWindow(nome, tamanho, posicao)
     MinimizeButton.Font = Enum.Font.SourceSansBold
     MinimizeButton.TextSize = 20
     MinimizeButton.Parent = TitleBar
-    MinimizeButton.ZIndex = 3
 
-    -- Container de conteúdo
-    ContentContainer = Instance.new("ScrollingFrame")
+    local ContentContainer = Instance.new("ScrollingFrame")
+    ContentContainer.Name = "ContentContainer"
     ContentContainer.Size = UDim2.new(1, -10, 1, -60)
     ContentContainer.Position = UDim2.new(0, 5, 0, 35)
     ContentContainer.BackgroundTransparency = 1
     ContentContainer.BorderSizePixel = 0
-    ContentContainer.ScrollBarThickness = 4
-    ContentContainer.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+    ContentContainer.ScrollBarThickness = 0
+    ContentContainer.ScrollBarImageColor3 = Color3.fromRGB(0, 0, 0)
+    ContentContainer.ScrollBarImageTransparency = 1
     ContentContainer.ClipsDescendants = true
     ContentContainer.Parent = Frame
-    ContentContainer.ZIndex = 1
 
-    UIListLayout = Instance.new("UIListLayout")
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.Name = "UIListLayout"
     UIListLayout.Padding = UDim.new(0, 10)
     UIListLayout.Parent = ContentContainer
 
-    -- Créditos
     local Creditos = Instance.new("TextLabel")
+    Creditos.Name = "Credits"
     Creditos.Size = UDim2.new(1, 0, 0, 30)
     Creditos.Position = UDim2.new(0, 0, 1, -30)
     Creditos.BackgroundTransparency = 1
@@ -104,17 +98,15 @@ function RN_UI:CreateWindow(nome, tamanho, posicao)
     Creditos.Font = Enum.Font.SourceSansBold
     Creditos.TextSize = 16
     Creditos.Parent = Frame
-    Creditos.ZIndex = 1
 
-    -- Background para dragging
     local BackgroundDrag = Instance.new("Frame")
+    BackgroundDrag.Name = "BackgroundDrag"
     BackgroundDrag.Size = UDim2.new(1, 0, 1, 0)
     BackgroundDrag.BackgroundTransparency = 1
     BackgroundDrag.BorderSizePixel = 0
     BackgroundDrag.ZIndex = 0
     BackgroundDrag.Parent = Frame
 
-    -- Sistema de dragging
     local function update(input)
         local delta = input.Position - dragStart
         Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
@@ -126,7 +118,7 @@ function RN_UI:CreateWindow(nome, tamanho, posicao)
                 dragging = true
                 dragStart = input.Position
                 startPos = Frame.Position
-                
+
                 input.Changed:Connect(function()
                     if input.UserInputState == Enum.UserInputState.End then
                         dragging = false
@@ -151,14 +143,30 @@ function RN_UI:CreateWindow(nome, tamanho, posicao)
         end
     end)
 
-    -- Sistema de minimizar
+    local function ajustarAlturaJanela()
+        local alturaMinima = 220
+        local alturaMaxima = 400
+        local alturaConteudo = UIListLayout.AbsoluteContentSize.Y + 80
+
+        local novaAltura = math.clamp(alturaConteudo, alturaMinima, alturaMaxima)
+
+        local tween = TweenService:Create(
+            Frame,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0, 250, 0, novaAltura)}
+        )
+        tween:Play()
+
+        ContentContainer.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
+    end
+
     local isMinimized = false
     local originalSize = Frame.Size
-    local minimizedSize = UDim2.new(0, Frame.Size.X.Offset, 0, 30)
+    local minimizedSize = UDim2.new(0, 250, 0, 30)
 
     MinimizeButton.MouseButton1Click:Connect(function()
         isMinimized = not isMinimized
-        
+
         if isMinimized then
             local tween = TweenService:Create(
                 Frame,
@@ -184,74 +192,284 @@ function RN_UI:CreateWindow(nome, tamanho, posicao)
         end
     end)
 
-    -- Ajuste automático de altura
-    local function ajustarAlturaJanela()
-        local alturaMinima = 220
-        local alturaMaxima = 400
-        local alturaConteudo = UIListLayout.AbsoluteContentSize.Y + 80
-        
-        local novaAltura = math.clamp(alturaConteudo, alturaMinima, alturaMaxima)
-        
-        local tween = TweenService:Create(
-            Frame,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Size = UDim2.new(0, Frame.Size.X.Offset, 0, novaAltura)}
-        )
-        tween:Play()
-        
-        ContentContainer.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
-    end
+    local window = {
+        ContentContainer = ContentContainer,
+        UIListLayout = UIListLayout,
+        Frame = Frame,
+        ScreenGui = ScreenGui,
+        ajustarAlturaJanela = ajustarAlturaJanela
+    }
 
     UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(ajustarAlturaJanela)
-    
-    -- Ajustar inicialmente após um delay
-    task.spawn(function()
-        task.wait(0.5)
-        ajustarAlturaJanela()
-    end)
+    task.wait(0.1)
+    ajustarAlturaJanela()
 
-    print("✅ RN TEAM UI Carregada com Sucesso!")
-    return {
-        ScreenGui = ScreenGui,
-        Frame = Frame,
-        ContentContainer = ContentContainer
-    }
+    table.insert(windows, window)
+
+    return window
 end
 
-function RN_UI:CreateButton(texto, callback)
-    if not ContentContainer then
-        warn("❌ ContentContainer não encontrado. Chame CreateWindow primeiro!")
-        return
+-- Função para criar botão (adaptada para receber o container da janela)
+function RNLibrary:CreateButton(window, text, callback)
+    if not window or not window.ContentContainer then
+        warn("Invalid window provided to CreateButton")
+        return nil
     end
-    
+
     local Botao = Instance.new("TextButton")
     Botao.Size = UDim2.new(1, 0, 0, 35)
     Botao.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    Botao.Text = texto
+    Botao.Text = text
     Botao.TextColor3 = Color3.fromRGB(255, 255, 255)
     Botao.Font = Enum.Font.SourceSansBold
     Botao.TextSize = 18
-    Botao.ZIndex = 5
-    Botao.Parent = ContentContainer
-    
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 6)
-    UICorner.Parent = Botao
+    Botao.ZIndex = 1
+    Botao.Parent = window.ContentContainer
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 6)
+    buttonCorner.Parent = Botao
 
     Botao.MouseEnter:Connect(function()
         Botao.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
     end)
-    
     Botao.MouseLeave:Connect(function()
         Botao.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     end)
 
-    Botao.MouseButton1Click:Connect(callback)
-    
-    table.insert(elementos, Botao)
+    Botao.MouseButton1Click:Connect(function()
+        if callback then
+            callback()
+        end
+        window.ajustarAlturaJanela()
+    end)
+
+    window.ajustarAlturaJanela()
     return Botao
 end
 
--- ... (as outras funções CreateToggle, CreateDropdown permanecem iguais)
+-- Função para criar toggle (completada com funcionalidade de toggle)
+function RNLibrary:CreateToggle(window, text, defaultState, callback)
+    if not window or not window.ContentContainer then
+        warn("Invalid window provided to CreateToggle")
+        return nil
+    end
 
-return RN_UI
+    local ToggleContainer = Instance.new("Frame")
+    ToggleContainer.Size = UDim2.new(1, 0, 0, 30)
+    ToggleContainer.BackgroundTransparency = 1
+    ToggleContainer.ZIndex = 1
+    ToggleContainer.Parent = window.ContentContainer
+
+    local Toggle = Instance.new("TextButton")
+    Toggle.Size = UDim2.new(1, 0, 1, 0)
+    Toggle.BackgroundTransparency = 1
+    Toggle.Text = text
+    Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Toggle.Font = Enum.Font.SourceSansBold
+    Toggle.TextSize = 18
+    Toggle.TextXAlignment = Enum.TextXAlignment.Left
+    Toggle.ZIndex = 1
+    Toggle.Parent = ToggleContainer
+
+    local Box = Instance.new("Frame")
+    Box.Size = UDim2.new(0, 20, 0, 20)
+    Box.Position = UDim2.new(1, -25, 0.5, -10)
+    Box.BackgroundColor3 = defaultState and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+    Box.ZIndex = 1
+    Box.Parent = Toggle
+    local boxCorner = Instance.new("UICorner")
+    boxCorner.CornerRadius = UDim.new(0, 4)
+    boxCorner.Parent = Box
+
+    local state = defaultState or false
+
+    Toggle.MouseButton1Click:Connect(function()
+        state = not state
+        Box.BackgroundColor3 = state and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+        if callback then
+            callback(state)
+        end
+    end)
+
+    window.ajustarAlturaJanela()
+    return Toggle, Box
+end
+
+-- Função para criar dropdown (adaptada para receber o window)
+function RNLibrary:CreateDropdown(window, initialText, options, callback)
+    if not window or not window.ContentContainer then
+        warn("Invalid window provided to CreateDropdown")
+        return nil
+    end
+
+    local BotaoSelecao = Instance.new("TextButton")
+    BotaoSelecao.Size = UDim2.new(1, 0, 0, 35)
+    BotaoSelecao.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    BotaoSelecao.Text = initialText
+    BotaoSelecao.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BotaoSelecao.Font = Enum.Font.SourceSansBold
+    BotaoSelecao.TextSize = 18
+    BotaoSelecao.ZIndex = 2
+    BotaoSelecao.Parent = window.ContentContainer
+    local dropdownCorner = Instance.new("UICorner")
+    dropdownCorner.CornerRadius = UDim.new(0, 6)
+    dropdownCorner.Parent = BotaoSelecao
+
+    -- Seta indicadora
+    local Seta = Instance.new("TextLabel")
+    Seta.Size = UDim2.new(0, 20, 0, 20)
+    Seta.Position = UDim2.new(1, -25, 0.5, -10)
+    Seta.BackgroundTransparency = 1
+    Seta.Text = "▼"
+    Seta.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Seta.Font = Enum.Font.SourceSansBold
+    Seta.TextSize = 14
+    Seta.ZIndex = 2
+    Seta.Parent = BotaoSelecao
+
+    local ListaContainer = Instance.new("ScrollingFrame")
+    ListaContainer.Size = UDim2.new(0, 240, 0, 0)
+    ListaContainer.Position = UDim2.new(0, 0, 0, 0)
+    ListaContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    ListaContainer.BorderSizePixel = 0
+    ListaContainer.ClipsDescendants = true
+    ListaContainer.Visible = false
+    ListaContainer.ZIndex = 100
+    ListaContainer.ScrollBarThickness = 0
+    ListaContainer.ScrollBarImageTransparency = 1
+    ListaContainer.Parent = window.ScreenGui
+    local listaCorner = Instance.new("UICorner")
+    listaCorner.CornerRadius = UDim.new(0, 6)
+    listaCorner.Parent = ListaContainer
+
+    local ListaLayout = Instance.new("UIListLayout")
+    ListaLayout.Padding = UDim.new(0, 2)
+    ListaLayout.Parent = ListaContainer
+
+    local opcaoSelecionada = initialText
+    local listaAberta = false
+
+    local alturaMaximaLista = 150
+    local alturaPorOpcao = 32
+    local espacamento = 2
+    local alturaTotalConteudo = #options * (alturaPorOpcao + espacamento) - espacamento
+
+    local alturaFinalLista = math.min(alturaTotalConteudo, alturaMaximaLista)
+
+    for _, opcao in ipairs(options) do
+        local OpcaoBotao = Instance.new("TextButton")
+        OpcaoBotao.Size = UDim2.new(1, 0, 0, 30)
+        OpcaoBotao.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        OpcaoBotao.Text = opcao
+        OpcaoBotao.TextColor3 = Color3.fromRGB(255, 255, 255)
+        OpcaoBotao.Font = Enum.Font.SourceSans
+        OpcaoBotao.TextSize = 16
+        OpcaoBotao.ZIndex = 101
+        OpcaoBotao.Parent = ListaContainer
+        local opcaoCorner = Instance.new("UICorner")
+        opcaoCorner.CornerRadius = UDim.new(0, 4)
+        opcaoCorner.Parent = OpcaoBotao
+
+        OpcaoBotao.MouseEnter:Connect(function()
+            OpcaoBotao.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+        end)
+        OpcaoBotao.MouseLeave:Connect(function()
+            OpcaoBotao.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        end)
+
+        OpcaoBotao.MouseButton1Click:Connect(function()
+            opcaoSelecionada = opcao
+            BotaoSelecao.Text = opcao
+            listaAberta = false
+
+            local tween = TweenService:Create(
+                ListaContainer,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Size = UDim2.new(0, 240, 0, 0)}
+            )
+            tween:Play()
+
+            task.wait(0.2)
+            ListaContainer.Visible = false
+            Seta.Text = "▼"
+
+            if callback then
+                callback(opcao)
+            end
+            window.ajustarAlturaJanela()
+        end)
+    end
+
+    ListaContainer.CanvasSize = UDim2.new(0, 0, 0, alturaTotalConteudo)
+
+    local function reposicionarLista()
+        if listaAberta then
+            local posicaoBotao = BotaoSelecao.AbsolutePosition
+            local tamanhoBotao = BotaoSelecao.AbsoluteSize
+
+            -- Posiciona a lista logo abaixo do botão
+            ListaContainer.Position = UDim2.new(
+                0, posicaoBotao.X,
+                0, posicaoBotao.Y + tamanhoBotao.Y + 5
+            )
+        end
+    end
+
+    BotaoSelecao.MouseButton1Click:Connect(function()
+        if listaAberta then
+            listaAberta = false
+            local tween = TweenService:Create(
+                ListaContainer,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Size = UDim2.new(0, 240, 0, 0)}
+            )
+            tween:Play()
+            task.wait(0.2)
+            ListaContainer.Visible = false
+            Seta.Text = "▼"
+        else
+            listaAberta = true
+            reposicionarLista()
+            ListaContainer.Visible = true
+            local tween = TweenService:Create(
+                ListaContainer,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Size = UDim2.new(0, 240, 0, alturaFinalLista)}
+            )
+            tween:Play()
+            Seta.Text = "▲"
+        end
+    end)
+
+    window.Frame:GetPropertyChangedSignal("Position"):Connect(function()
+        if listaAberta then
+            reposicionarLista()
+        end
+    end)
+
+    BotaoSelecao.MouseEnter:Connect(function()
+        if not listaAberta then
+            BotaoSelecao.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+        end
+    end)
+    BotaoSelecao.MouseLeave:Connect(function()
+        if not listaAberta then
+            BotaoSelecao.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        end
+    end)
+
+    window.ajustarAlturaJanela()
+    return BotaoSelecao
+end
+
+-- Exemplo de uso (remova ou adapte para o seu menu)
+-- local window = RNLibrary:CreateWindow({Title = "Meu Menu"})
+-- RNLibrary:CreateButton(window, "Botão 1", function() print("Botão 1 clicado!") end)
+-- local toggle, box = RNLibrary:CreateToggle(window, "Toggle Exemplo", false, function(state) print("Toggle:", state) end)
+-- RNLibrary:CreateDropdown(window, "Opção 1", {"Opção 1", "Opção 2", "Opção 3"}, function(option) print("Selecionado:", option) end)
+
+-- Para adicionar seus botões, use:
+-- RNLibrary:CreateButton(suaWindow, "Seu Botão", function() -- seu código aqui end)
+-- E assim por diante para toggles e dropdowns.
+
+return RNLibrary
