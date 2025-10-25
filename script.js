@@ -539,6 +539,34 @@ function RNUI:TextBox(labelText, placeholder, callback)
     return TextContainer, TextBox
 end
 
+-- Adicionar esta função na UI Library
+function RNUI:EventSystem(eventConfig, eventList, activateText)
+    if not ScrollFrame then
+        warn("UI não inicializada. Chame RNUI:Init() primeiro.")
+        return nil
+    end
+    
+    local selectedEvent = eventList[1] -- Primeiro evento como padrão
+    
+    -- Dropdown para selecionar evento
+    local EventDropdown = self:Dropdown("Selecionar Evento", eventList, eventList[1], function(event)
+        selectedEvent = event
+        print("🎯 Evento selecionado:", event)
+    end)
+    
+    -- Botão para ativar evento
+    local ActivateButton = self:Button(activateText or "🚀 ATIVAR EVENTO", function()
+        if selectedEvent and eventConfig[selectedEvent] then
+            print("🎯 Executando evento:", selectedEvent)
+            eventConfig[selectedEvent]() -- Executa a função do evento
+        else
+            print("❌ Evento não encontrado ou não selecionado")
+        end
+    end)
+    
+    return EventDropdown, ActivateButton
+end
+
 -- Função para criar label
 function RNUI:Label(text)
     if not ScrollFrame then
@@ -584,4 +612,5 @@ function RNUI:Destroy()
 end
 
 return RNUI
+
 
