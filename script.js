@@ -10,7 +10,6 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local ScreenGui
 local MainFrame
-local ContentContainer
 local ScrollFrame
 local UIListLayout
 
@@ -69,25 +68,16 @@ function RNUI:Init(config)
     MinimizeButton.TextSize = 20
     MinimizeButton.Parent = TitleBar
     
-    -- Container de conteúdo
-    ContentContainer = Instance.new("Frame")
-    ContentContainer.Size = UDim2.new(1, -10, 1, -60)
-    ContentContainer.Position = UDim2.new(0, 5, 0, 35)
-    ContentContainer.BackgroundTransparency = 1
-    ContentContainer.BorderSizePixel = 0
-    ContentContainer.ClipsDescendants = true
-    ContentContainer.Parent = MainFrame
-    
-    -- ScrollingFrame dentro do ContentContainer
+    -- ScrollingFrame PRINCIPAL (sem barra de rolagem visível)
     ScrollFrame = Instance.new("ScrollingFrame")
-    ScrollFrame.Size = UDim2.new(1, 0, 1, 0)
-    ScrollFrame.Position = UDim2.new(0, 0, 0, 0)
+    ScrollFrame.Size = UDim2.new(1, -10, 1, -60)
+    ScrollFrame.Position = UDim2.new(0, 5, 0, 35)
     ScrollFrame.BackgroundTransparency = 1
     ScrollFrame.BorderSizePixel = 0
-    ScrollFrame.ScrollBarThickness = 5
-    ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+    ScrollFrame.ScrollBarThickness = 0  -- BARRA INVISÍVEL
+    ScrollFrame.ScrollBarImageTransparency = 1  -- TOTALMENTE TRANSPARENTE
     ScrollFrame.ClipsDescendants = true
-    ScrollFrame.Parent = ContentContainer
+    ScrollFrame.Parent = MainFrame
     
     UIListLayout = Instance.new("UIListLayout")
     UIListLayout.Padding = UDim.new(0, 10)
@@ -104,7 +94,7 @@ function RNUI:Init(config)
     Creditos.TextSize = 16
     Creditos.Parent = MainFrame
     
-    -- Background para drag
+    -- Background para drag (cobre toda a janela)
     local BackgroundDrag = Instance.new("Frame")
     BackgroundDrag.Size = UDim2.new(1, 0, 1, 0)
     BackgroundDrag.BackgroundTransparency = 1
@@ -112,7 +102,7 @@ function RNUI:Init(config)
     BackgroundDrag.ZIndex = 0
     BackgroundDrag.Parent = MainFrame
     
-    -- Sistema de Drag
+    -- Sistema de Drag para MOUSE e CELULAR
     local dragging, dragInput, dragStart, startPos
     
     local function update(input)
@@ -127,7 +117,7 @@ function RNUI:Init(config)
     
     local function connectDragEvents(frame)
         frame.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 dragging = true
                 dragStart = input.Position
                 startPos = MainFrame.Position
@@ -141,12 +131,13 @@ function RNUI:Init(config)
         end)
         
         frame.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement then
+            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
                 dragInput = input
             end
         end)
     end
     
+    -- Conectar drag na TitleBar e no Background
     connectDragEvents(TitleBar)
     connectDragEvents(BackgroundDrag)
     
@@ -172,7 +163,7 @@ function RNUI:Init(config)
                 {Size = minimizedSize}
             )
             tween:Play()
-            ContentContainer.Visible = false
+            ScrollFrame.Visible = false
             Creditos.Visible = false
             BackgroundDrag.Visible = false
             MinimizeButton.Text = "+"
@@ -184,17 +175,23 @@ function RNUI:Init(config)
                 {Size = originalSize}
             )
             tween:Play()
-            ContentContainer.Visible = true
+            ScrollFrame.Visible = true
             Creditos.Visible = true
             BackgroundDrag.Visible = true
             MinimizeButton.Text = "-"
         end
     end)
     
-    -- Auto-ajuste de altura
+    -- Auto-ajuste de altura COM LIMITE
     local function ajustarAlturaJanela()
+        if isMinimized then return end
+        
+        local alturaMinima = 220  -- Altura mínima
+        local alturaMaxima = 400  -- Altura máxima
         local alturaConteudo = UIListLayout.AbsoluteContentSize.Y + 80
-        local novaAltura = math.clamp(alturaConteudo, 220, 400)
+        
+        -- Aplicar limites
+        local novaAltura = math.clamp(alturaConteudo, alturaMinima, alturaMaxima)
         
         local tween = TweenService:Create(
             MainFrame,
@@ -203,6 +200,7 @@ function RNUI:Init(config)
         )
         tween:Play()
         
+        -- Atualizar canvas size para rolagem
         ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
     end
     
@@ -307,7 +305,7 @@ function RNUI:Toggle(text, default, callback)
     return ToggleContainer
 end
 
--- Função para criar dropdown COMPLETO
+-- Função para criar dropdown
 function RNUI:Dropdown(text, options, default, callback)
     if not ScrollFrame then
         warn("UI não inicializada. Chame RNUI:Init() primeiro.")
@@ -347,8 +345,8 @@ function RNUI:Dropdown(text, options, default, callback)
     DropdownContainer.ClipsDescendants = true
     DropdownContainer.Visible = false
     DropdownContainer.ZIndex = 100
-    DropdownContainer.ScrollBarThickness = 5
-    DropdownContainer.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+    DropdownContainer.ScrollBarThickness = 0  -- Sem barra aqui também
+    DropdownContainer.ScrollBarImageTransparency = 1
     DropdownContainer.Parent = ScreenGui
     
     local DropdownContainerCorner = Instance.new("UICorner")
@@ -524,13 +522,6 @@ function RNUI:Destroy()
     if ScreenGui then
         ScreenGui:Destroy()
         ScreenGui = nil
-    end
-end
-
--- Função para mostrar/ocultar a UI
-function RNUI:SetVisible(visible)
-    if ScreenGui then
-        ScreenGui.Enabled = visible
     end
 end
 
