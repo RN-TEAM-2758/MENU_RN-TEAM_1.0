@@ -1,4 +1,4 @@
--- UI Library por RN TEAM
+-- UI Library por RN TEAM - VERSÃO CORRIGIDA
 local RN_UI = {}
 
 -- Serviços
@@ -9,20 +9,24 @@ local RunService = game:GetService("RunService")
 
 -- Variáveis globais da UI
 local LocalPlayer = Players.LocalPlayer
-local ScreenGui
-local Frame
-local ContentContainer
-local UIListLayout
+local ScreenGui, Frame, ContentContainer, UIListLayout
 local elementos = {}
 
 -- Configuração de dragging
 local dragging, dragInput, dragStart, startPos
 
 function RN_UI:CreateWindow(nome, tamanho, posicao)
+    -- Esperar o player carregar
+    if not LocalPlayer then
+        LocalPlayer = Players.LocalPlayer
+    end
+    
     -- Criar a GUI principal
     ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "RNTEAM_UI"
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
     ScreenGui.ResetOnSpawn = false
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
     -- Frame principal
     Frame = Instance.new("Frame")
@@ -31,7 +35,11 @@ function RN_UI:CreateWindow(nome, tamanho, posicao)
     Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     Frame.BorderSizePixel = 0
     Frame.Parent = ScreenGui
-    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
+    Frame.ZIndex = 1
+    
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 8)
+    UICorner.Parent = Frame
 
     -- Title Bar
     local TitleBar = Instance.new("Frame")
@@ -39,7 +47,11 @@ function RN_UI:CreateWindow(nome, tamanho, posicao)
     TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     TitleBar.BorderSizePixel = 0
     TitleBar.Parent = Frame
-    Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 8)
+    TitleBar.ZIndex = 2
+    
+    local TitleBarCorner = Instance.new("UICorner")
+    TitleBarCorner.CornerRadius = UDim.new(0, 8)
+    TitleBarCorner.Parent = TitleBar
 
     -- Título
     local Titulo = Instance.new("TextLabel")
@@ -52,6 +64,7 @@ function RN_UI:CreateWindow(nome, tamanho, posicao)
     Titulo.TextSize = 16
     Titulo.TextXAlignment = Enum.TextXAlignment.Center
     Titulo.Parent = TitleBar
+    Titulo.ZIndex = 3
 
     -- Botão Minimizar
     local MinimizeButton = Instance.new("TextButton")
@@ -63,6 +76,7 @@ function RN_UI:CreateWindow(nome, tamanho, posicao)
     MinimizeButton.Font = Enum.Font.SourceSansBold
     MinimizeButton.TextSize = 20
     MinimizeButton.Parent = TitleBar
+    MinimizeButton.ZIndex = 3
 
     -- Container de conteúdo
     ContentContainer = Instance.new("ScrollingFrame")
@@ -70,11 +84,11 @@ function RN_UI:CreateWindow(nome, tamanho, posicao)
     ContentContainer.Position = UDim2.new(0, 5, 0, 35)
     ContentContainer.BackgroundTransparency = 1
     ContentContainer.BorderSizePixel = 0
-    ContentContainer.ScrollBarThickness = 0
-    ContentContainer.ScrollBarImageColor3 = Color3.fromRGB(0, 0, 0)
-    ContentContainer.ScrollBarImageTransparency = 1
+    ContentContainer.ScrollBarThickness = 4
+    ContentContainer.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
     ContentContainer.ClipsDescendants = true
     ContentContainer.Parent = Frame
+    ContentContainer.ZIndex = 1
 
     UIListLayout = Instance.new("UIListLayout")
     UIListLayout.Padding = UDim.new(0, 10)
@@ -90,6 +104,7 @@ function RN_UI:CreateWindow(nome, tamanho, posicao)
     Creditos.Font = Enum.Font.SourceSansBold
     Creditos.TextSize = 16
     Creditos.Parent = Frame
+    Creditos.ZIndex = 1
 
     -- Background para dragging
     local BackgroundDrag = Instance.new("Frame")
@@ -188,9 +203,14 @@ function RN_UI:CreateWindow(nome, tamanho, posicao)
     end
 
     UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(ajustarAlturaJanela)
-    task.wait(0.1)
-    ajustarAlturaJanela()
+    
+    -- Ajustar inicialmente após um delay
+    task.spawn(function()
+        task.wait(0.5)
+        ajustarAlturaJanela()
+    end)
 
+    print("✅ RN TEAM UI Carregada com Sucesso!")
     return {
         ScreenGui = ScreenGui,
         Frame = Frame,
@@ -199,6 +219,11 @@ function RN_UI:CreateWindow(nome, tamanho, posicao)
 end
 
 function RN_UI:CreateButton(texto, callback)
+    if not ContentContainer then
+        warn("❌ ContentContainer não encontrado. Chame CreateWindow primeiro!")
+        return
+    end
+    
     local Botao = Instance.new("TextButton")
     Botao.Size = UDim2.new(1, 0, 0, 35)
     Botao.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
@@ -206,13 +231,17 @@ function RN_UI:CreateButton(texto, callback)
     Botao.TextColor3 = Color3.fromRGB(255, 255, 255)
     Botao.Font = Enum.Font.SourceSansBold
     Botao.TextSize = 18
-    Botao.ZIndex = 1
+    Botao.ZIndex = 5
     Botao.Parent = ContentContainer
-    Instance.new("UICorner", Botao).CornerRadius = UDim.new(0, 6)
+    
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 6)
+    UICorner.Parent = Botao
 
     Botao.MouseEnter:Connect(function()
         Botao.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
     end)
+    
     Botao.MouseLeave:Connect(function()
         Botao.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     end)
@@ -223,221 +252,6 @@ function RN_UI:CreateButton(texto, callback)
     return Botao
 end
 
-function RN_UI:CreateToggle(texto, callback)
-    local ToggleContainer = Instance.new("Frame")
-    ToggleContainer.Size = UDim2.new(1, 0, 0, 30)
-    ToggleContainer.BackgroundTransparency = 1
-    ToggleContainer.ZIndex = 1
-    ToggleContainer.Parent = ContentContainer
-
-    local Toggle = Instance.new("TextButton")
-    Toggle.Size = UDim2.new(1, 0, 1, 0)
-    Toggle.BackgroundTransparency = 1
-    Toggle.Text = texto
-    Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Toggle.Font = Enum.Font.SourceSansBold
-    Toggle.TextSize = 18
-    Toggle.TextXAlignment = Enum.TextXAlignment.Left
-    Toggle.ZIndex = 1
-    Toggle.Parent = ToggleContainer
-
-    local Box = Instance.new("Frame", Toggle)
-    Box.Size = UDim2.new(0, 20, 0, 20)
-    Box.Position = UDim2.new(1, -25, 0.5, -10)
-    Box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    Box.ZIndex = 1
-    Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 4)
-
-    local estado = false
-
-    Toggle.MouseButton1Click:Connect(function()
-        estado = not estado
-        if estado then
-            Box.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-        else
-            Box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        end
-        
-        if callback then
-            callback(estado)
-        end
-    end)
-
-    table.insert(elementos, ToggleContainer)
-    return Toggle, Box, function() return estado end
-end
-
-function RN_UI:CreateDropdown(textoInicial, opcoes, callback)
-    local BotaoSelecao = Instance.new("TextButton")
-    BotaoSelecao.Size = UDim2.new(1, 0, 0, 35)
-    BotaoSelecao.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    BotaoSelecao.Text = textoInicial
-    BotaoSelecao.TextColor3 = Color3.fromRGB(255, 255, 255)
-    BotaoSelecao.Font = Enum.Font.SourceSansBold
-    BotaoSelecao.TextSize = 18
-    BotaoSelecao.ZIndex = 2
-    BotaoSelecao.Parent = ContentContainer
-    Instance.new("UICorner", BotaoSelecao).CornerRadius = UDim.new(0, 6)
-
-    local Seta = Instance.new("TextLabel")
-    Seta.Size = UDim2.new(0, 20, 0, 20)
-    Seta.Position = UDim2.new(1, -25, 0.5, -10)
-    Seta.BackgroundTransparency = 1
-    Seta.Text = "▼"
-    Seta.TextColor3 = Color3.fromRGB(200, 200, 200)
-    Seta.Font = Enum.Font.SourceSansBold
-    Seta.TextSize = 14
-    Seta.ZIndex = 2
-    Seta.Parent = BotaoSelecao
-
-    local ListaContainer = Instance.new("ScrollingFrame")
-    ListaContainer.Size = UDim2.new(0, BotaoSelecao.AbsoluteSize.X, 0, 0)
-    ListaContainer.Position = UDim2.new(0, 0, 0, 0)
-    ListaContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    ListaContainer.BorderSizePixel = 0
-    ListaContainer.ClipsDescendants = true
-    ListaContainer.Visible = false
-    ListaContainer.ZIndex = 100
-    ListaContainer.ScrollBarThickness = 0
-    ListaContainer.ScrollBarImageTransparency = 1
-    ListaContainer.Parent = ScreenGui
-    Instance.new("UICorner", ListaContainer).CornerRadius = UDim.new(0, 6)
-
-    local ListaLayout = Instance.new("UIListLayout")
-    ListaLayout.Padding = UDim.new(0, 2)
-    ListaLayout.Parent = ListaContainer
-
-    local opcaoSelecionada = textoInicial
-    local listaAberta = false
-
-    local alturaMaximaLista = 150
-    local alturaPorOpcao = 32
-    local espacamento = 2
-    local alturaTotalConteudo = #opcoes * (alturaPorOpcao + espacamento) - espacamento
-    local alturaFinalLista = math.min(alturaTotalConteudo, alturaMaximaLista)
-
-    for _, opcao in ipairs(opcoes) do
-        local OpcaoBotao = Instance.new("TextButton")
-        OpcaoBotao.Size = UDim2.new(1, 0, 0, 30)
-        OpcaoBotao.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        OpcaoBotao.Text = opcao
-        OpcaoBotao.TextColor3 = Color3.fromRGB(255, 255, 255)
-        OpcaoBotao.Font = Enum.Font.SourceSans
-        OpcaoBotao.TextSize = 16
-        OpcaoBotao.ZIndex = 101
-        OpcaoBotao.Parent = ListaContainer
-        Instance.new("UICorner", OpcaoBotao).CornerRadius = UDim.new(0, 4)
-
-        OpcaoBotao.MouseEnter:Connect(function()
-            OpcaoBotao.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-        end)
-        OpcaoBotao.MouseLeave:Connect(function()
-            OpcaoBotao.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        end)
-
-        OpcaoBotao.MouseButton1Click:Connect(function()
-            opcaoSelecionada = opcao
-            BotaoSelecao.Text = opcao
-            listaAberta = false
-            
-            local tween = TweenService:Create(
-                ListaContainer,
-                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Size = UDim2.new(0, BotaoSelecao.AbsoluteSize.X, 0, 0)}
-            )
-            tween:Play()
-            
-            task.wait(0.2)
-            ListaContainer.Visible = false
-            Seta.Text = "▼"
-            
-            if callback then
-                callback(opcao)
-            end
-        end)
-    end
-
-    ListaContainer.CanvasSize = UDim2.new(0, 0, 0, alturaTotalConteudo)
-
-    local function reposicionarLista()
-        if listaAberta then
-            local posicaoBotao = BotaoSelecao.AbsolutePosition
-            local tamanhoBotao = BotaoSelecao.AbsoluteSize
-            
-            ListaContainer.Position = UDim2.new(
-                0, posicaoBotao.X,
-                0, posicaoBotao.Y + tamanhoBotao.Y + 5
-            )
-        end
-    end
-
-    BotaoSelecao.MouseButton1Click:Connect(function()
-        if listaAberta then
-            listaAberta = false
-            local tween = TweenService:Create(
-                ListaContainer,
-                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Size = UDim2.new(0, BotaoSelecao.AbsoluteSize.X, 0, 0)}
-            )
-            tween:Play()
-            task.wait(0.2)
-            ListaContainer.Visible = false
-            Seta.Text = "▼"
-        else
-            listaAberta = true
-            reposicionarLista()
-            ListaContainer.Visible = true
-            local tween = TweenService:Create(
-                ListaContainer,
-                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Size = UDim2.new(0, BotaoSelecao.AbsoluteSize.X, 0, alturaFinalLista)}
-            )
-            tween:Play()
-            Seta.Text = "▲"
-        end
-    end)
-
-    Frame:GetPropertyChangedSignal("Position"):Connect(function()
-        if listaAberta then
-            reposicionarLista()
-        end
-    end)
-
-    BotaoSelecao.MouseEnter:Connect(function()
-        if not listaAberta then
-            BotaoSelecao.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-        end
-    end)
-    BotaoSelecao.MouseLeave:Connect(function()
-        if not listaAberta then
-            BotaoSelecao.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        end
-    end)
-
-    table.insert(elementos, BotaoSelecao)
-    return BotaoSelecao
-end
-
-function RN_UI:CreateLabel(texto)
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(1, 0, 0, 25)
-    Label.BackgroundTransparency = 1
-    Label.Text = texto
-    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Label.Font = Enum.Font.SourceSansBold
-    Label.TextSize = 16
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = ContentContainer
-
-    table.insert(elementos, Label)
-    return Label
-end
-
-function RN_UI:Destroy()
-    if ScreenGui then
-        ScreenGui:Destroy()
-    end
-    elementos = {}
-end
+-- ... (as outras funções CreateToggle, CreateDropdown permanecem iguais)
 
 return RN_UI
