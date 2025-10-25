@@ -11,8 +11,8 @@ local LocalPlayer = Players.LocalPlayer
 local ScreenGui
 local MainFrame
 local ContentContainer
+local ScrollFrame
 local UIListLayout
-local Elements = {}
 
 -- Função de inicialização
 function RNUI:Init(config)
@@ -69,7 +69,7 @@ function RNUI:Init(config)
     MinimizeButton.TextSize = 20
     MinimizeButton.Parent = TitleBar
     
-    -- Container de conteúdo (FIXED - agora vai mostrar os elementos)
+    -- Container de conteúdo
     ContentContainer = Instance.new("Frame")
     ContentContainer.Size = UDim2.new(1, -10, 1, -60)
     ContentContainer.Position = UDim2.new(0, 5, 0, 35)
@@ -79,7 +79,7 @@ function RNUI:Init(config)
     ContentContainer.Parent = MainFrame
     
     -- ScrollingFrame dentro do ContentContainer
-    local ScrollFrame = Instance.new("ScrollingFrame")
+    ScrollFrame = Instance.new("ScrollingFrame")
     ScrollFrame.Size = UDim2.new(1, 0, 1, 0)
     ScrollFrame.Position = UDim2.new(0, 0, 0, 0)
     ScrollFrame.BackgroundTransparency = 1
@@ -112,7 +112,7 @@ function RNUI:Init(config)
     BackgroundDrag.ZIndex = 0
     BackgroundDrag.Parent = MainFrame
     
-    -- Sistema de Drag (simplificado)
+    -- Sistema de Drag
     local dragging, dragInput, dragStart, startPos
     
     local function update(input)
@@ -125,25 +125,30 @@ function RNUI:Init(config)
         )
     end
     
-    TitleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = MainFrame.Position
-            
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
+    local function connectDragEvents(frame)
+        frame.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                startPos = MainFrame.Position
+                
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                    end
+                end)
+            end
+        end)
+        
+        frame.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                dragInput = input
+            end
+        end)
+    end
     
-    TitleBar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input
-        end
-    end)
+    connectDragEvents(TitleBar)
+    connectDragEvents(BackgroundDrag)
     
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
@@ -160,15 +165,25 @@ function RNUI:Init(config)
         isMinimized = not isMinimized
         
         if isMinimized then
-            -- Minimizar
-            MainFrame.Size = minimizedSize
+            -- Minimizar com animação
+            local tween = TweenService:Create(
+                MainFrame,
+                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Size = minimizedSize}
+            )
+            tween:Play()
             ContentContainer.Visible = false
             Creditos.Visible = false
             BackgroundDrag.Visible = false
             MinimizeButton.Text = "+"
         else
-            -- Restaurar
-            MainFrame.Size = originalSize
+            -- Restaurar com animação
+            local tween = TweenService:Create(
+                MainFrame,
+                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Size = originalSize}
+            )
+            tween:Play()
             ContentContainer.Visible = true
             Creditos.Visible = true
             BackgroundDrag.Visible = true
@@ -181,21 +196,28 @@ function RNUI:Init(config)
         local alturaConteudo = UIListLayout.AbsoluteContentSize.Y + 80
         local novaAltura = math.clamp(alturaConteudo, 220, 400)
         
-        MainFrame.Size = UDim2.new(0, 250, 0, novaAltura)
+        local tween = TweenService:Create(
+            MainFrame,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0, 250, 0, novaAltura)}
+        )
+        tween:Play()
+        
         ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
     end
     
     UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(ajustarAlturaJanela)
     
-    -- Salvar referência do ScrollFrame para usar nas funções
-    self.ScrollFrame = ScrollFrame
+    -- Ajuste inicial
+    task.wait(0.1)
+    ajustarAlturaJanela()
     
     return self
 end
 
 -- Função para criar botão
 function RNUI:Button(text, callback)
-    if not self.ScrollFrame then
+    if not ScrollFrame then
         warn("UI não inicializada. Chame RNUI:Init() primeiro.")
         return nil
     end
@@ -207,7 +229,7 @@ function RNUI:Button(text, callback)
     Button.TextColor3 = Color3.fromRGB(255, 255, 255)
     Button.Font = Enum.Font.SourceSansBold
     Button.TextSize = 16
-    Button.Parent = self.ScrollFrame
+    Button.Parent = ScrollFrame
     
     local ButtonCorner = Instance.new("UICorner")
     ButtonCorner.CornerRadius = UDim.new(0, 6)
@@ -232,7 +254,7 @@ end
 
 -- Função para criar toggle
 function RNUI:Toggle(text, default, callback)
-    if not self.ScrollFrame then
+    if not ScrollFrame then
         warn("UI não inicializada. Chame RNUI:Init() primeiro.")
         return nil
     end
@@ -240,7 +262,7 @@ function RNUI:Toggle(text, default, callback)
     local ToggleContainer = Instance.new("Frame")
     ToggleContainer.Size = UDim2.new(1, 0, 0, 30)
     ToggleContainer.BackgroundTransparency = 1
-    ToggleContainer.Parent = self.ScrollFrame
+    ToggleContainer.Parent = ScrollFrame
     
     local ToggleButton = Instance.new("TextButton")
     ToggleButton.Size = UDim2.new(1, 0, 1, 0)
@@ -285,9 +307,9 @@ function RNUI:Toggle(text, default, callback)
     return ToggleContainer
 end
 
--- Função para criar dropdown
+-- Função para criar dropdown COMPLETO
 function RNUI:Dropdown(text, options, default, callback)
-    if not self.ScrollFrame then
+    if not ScrollFrame then
         warn("UI não inicializada. Chame RNUI:Init() primeiro.")
         return nil
     end
@@ -299,7 +321,7 @@ function RNUI:Dropdown(text, options, default, callback)
     DropdownButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     DropdownButton.Font = Enum.Font.SourceSansBold
     DropdownButton.TextSize = 16
-    DropdownButton.Parent = self.ScrollFrame
+    DropdownButton.Parent = ScrollFrame
     
     local DropdownCorner = Instance.new("UICorner")
     DropdownCorner.CornerRadius = UDim.new(0, 6)
@@ -316,12 +338,154 @@ function RNUI:Dropdown(text, options, default, callback)
     Arrow.TextSize = 14
     Arrow.Parent = DropdownButton
     
+    -- Container da lista
+    local DropdownContainer = Instance.new("ScrollingFrame")
+    DropdownContainer.Size = UDim2.new(0, 240, 0, 0)
+    DropdownContainer.Position = UDim2.new(0, 0, 0, 0)
+    DropdownContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    DropdownContainer.BorderSizePixel = 0
+    DropdownContainer.ClipsDescendants = true
+    DropdownContainer.Visible = false
+    DropdownContainer.ZIndex = 100
+    DropdownContainer.ScrollBarThickness = 5
+    DropdownContainer.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+    DropdownContainer.Parent = ScreenGui
+    
+    local DropdownContainerCorner = Instance.new("UICorner")
+    DropdownContainerCorner.CornerRadius = UDim.new(0, 6)
+    DropdownContainerCorner.Parent = DropdownContainer
+    
+    local DropdownLayout = Instance.new("UIListLayout")
+    DropdownLayout.Padding = UDim.new(0, 2)
+    DropdownLayout.Parent = DropdownContainer
+    
+    local selectedOption = default or options[1]
+    local isOpen = false
+    
+    -- Calcular altura da lista
+    local maxHeight = 150
+    local optionHeight = 32
+    local totalContentHeight = #options * optionHeight
+    local finalHeight = math.min(totalContentHeight, maxHeight)
+    
+    -- Criar opções
+    for _, option in ipairs(options) do
+        local OptionButton = Instance.new("TextButton")
+        OptionButton.Size = UDim2.new(1, 0, 0, 30)
+        OptionButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        OptionButton.Text = option
+        OptionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        OptionButton.Font = Enum.Font.SourceSans
+        OptionButton.TextSize = 14
+        OptionButton.ZIndex = 101
+        OptionButton.Parent = DropdownContainer
+        
+        local OptionCorner = Instance.new("UICorner")
+        OptionCorner.CornerRadius = UDim.new(0, 4)
+        OptionCorner.Parent = OptionButton
+        
+        -- Efeitos hover
+        OptionButton.MouseEnter:Connect(function()
+            OptionButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+        end)
+        
+        OptionButton.MouseLeave:Connect(function()
+            OptionButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        end)
+        
+        -- Selecionar opção
+        OptionButton.MouseButton1Click:Connect(function()
+            selectedOption = option
+            DropdownButton.Text = text .. ": " .. option
+            isOpen = false
+            
+            -- Fechar dropdown com animação
+            local closeTween = TweenService:Create(
+                DropdownContainer,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Size = UDim2.new(0, 240, 0, 0)}
+            )
+            closeTween:Play()
+            
+            task.wait(0.2)
+            DropdownContainer.Visible = false
+            Arrow.Text = "▼"
+            
+            -- Callback
+            if type(callback) == "function" then
+                callback(option)
+            end
+        end)
+    end
+    
+    DropdownContainer.CanvasSize = UDim2.new(0, 0, 0, totalContentHeight)
+    
+    -- Reposicionar lista
+    local function repositionDropdown()
+        if isOpen then
+            local buttonPos = DropdownButton.AbsolutePosition
+            local buttonSize = DropdownButton.AbsoluteSize
+            
+            DropdownContainer.Position = UDim2.new(
+                0, buttonPos.X,
+                0, buttonPos.Y + buttonSize.Y + 5
+            )
+        end
+    end
+    
+    -- Abrir/fechar dropdown
+    DropdownButton.MouseButton1Click:Connect(function()
+        if isOpen then
+            isOpen = false
+            local closeTween = TweenService:Create(
+                DropdownContainer,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Size = UDim2.new(0, 240, 0, 0)}
+            )
+            closeTween:Play()
+            task.wait(0.2)
+            DropdownContainer.Visible = false
+            Arrow.Text = "▼"
+        else
+            isOpen = true
+            repositionDropdown()
+            DropdownContainer.Visible = true
+            local openTween = TweenService:Create(
+                DropdownContainer,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Size = UDim2.new(0, 240, 0, finalHeight)}
+            )
+            openTween:Play()
+            Arrow.Text = "▲"
+        end
+    end)
+    
+    -- Reposicionar quando a janela se mover
+    MainFrame:GetPropertyChangedSignal("Position"):Connect(function()
+        if isOpen then
+            repositionDropdown()
+        end
+    end)
+    
+    -- Efeitos hover no botão principal
+    DropdownButton.MouseEnter:Connect(function()
+        if not isOpen then
+            DropdownButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+        end
+    end)
+    
+    DropdownButton.MouseLeave:Connect(function()
+        if not isOpen then
+            DropdownButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        end
+    end)
+    
     return DropdownButton
 end
 
 -- Função para criar label
 function RNUI:Label(text)
-    if not self.ScrollFrame then
+    if not ScrollFrame then
         warn("UI não inicializada. Chame RNUI:Init() primeiro.")
         return nil
     end
@@ -334,14 +498,14 @@ function RNUI:Label(text)
     Label.Font = Enum.Font.SourceSansBold
     Label.TextSize = 16
     Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = self.ScrollFrame
+    Label.Parent = ScrollFrame
     
     return Label
 end
 
 -- Função para criar separador
 function RNUI:Separator()
-    if not self.ScrollFrame then
+    if not ScrollFrame then
         warn("UI não inicializada. Chame RNUI:Init() primeiro.")
         return nil
     end
@@ -350,7 +514,7 @@ function RNUI:Separator()
     Separator.Size = UDim2.new(1, 0, 0, 1)
     Separator.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     Separator.BorderSizePixel = 0
-    Separator.Parent = self.ScrollFrame
+    Separator.Parent = ScrollFrame
     
     return Separator
 end
@@ -360,6 +524,13 @@ function RNUI:Destroy()
     if ScreenGui then
         ScreenGui:Destroy()
         ScreenGui = nil
+    end
+end
+
+-- Função para mostrar/ocultar a UI
+function RNUI:SetVisible(visible)
+    if ScreenGui then
+        ScreenGui.Enabled = visible
     end
 end
 
