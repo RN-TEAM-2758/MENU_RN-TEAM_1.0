@@ -49,7 +49,7 @@ local MIN_HEIGHT, MAX_HEIGHT = 220, 400
 local OPTION_H, LIST_MAX_H = 32, 150
 
 -- Estado
-local ScreenGui, MainFrame, ScrollFrame, UIListLayout, MinimizeButton
+local ScreenGui, MainFrame, ScrollFrame, UIListLayout, MinimizeButton, CreditsLabel
 local Connections = {}     -- conexões globais (UserInputService), desconectadas no Destroy
 local Dropdowns = {}       -- funções que fecham cada dropdown
 local Flags = {}           -- valores salvos (config persistente)
@@ -225,6 +225,7 @@ local function resizeWindow(size)
     if not MainFrame then return end
     if sizeTween then sizeTween:Cancel() end
     sizeTween = tween(MainFrame, 0.25, {Size = size})
+    return sizeTween
 end
 
 -- Mantém a janela inteira dentro da tela
@@ -266,7 +267,19 @@ function RNUI:SetMinimized(state)
     isMinimized = state == true
     closeAllDropdowns()
     MinimizeButton.Text = isMinimized and "+" or "-"
-    resizeWindow(UDim2.fromOffset(windowWidth, isMinimized and HEADER or expandedHeight))
+    local t = resizeWindow(UDim2.fromOffset(windowWidth, isMinimized and HEADER or expandedHeight))
+
+    if isMinimized then
+        -- Os créditos ficam presos na borda de baixo e subiriam em cima do título
+        CreditsLabel.Visible = false
+    else
+        -- Só reaparecem quando a janela terminar de abrir
+        t.Completed:Connect(function()
+            if not isMinimized and CreditsLabel then
+                CreditsLabel.Visible = true
+            end
+        end)
+    end
 end
 
 ----------------------------------------------------------------------
@@ -382,7 +395,7 @@ function RNUI:Init(config)
     }, ScrollFrame)
 
     -- Créditos
-    create("TextLabel", {
+    CreditsLabel = create("TextLabel", {
         Name = "Credits",
         Size = UDim2.new(1, 0, 0, FOOTER),
         Position = UDim2.new(0, 0, 1, -FOOTER),
@@ -476,7 +489,7 @@ function RNUI:Destroy()
         ScreenGui:Destroy()
     end
 
-    ScreenGui, MainFrame, ScrollFrame, UIListLayout, MinimizeButton = nil, nil, nil, nil, nil
+    ScreenGui, MainFrame, ScrollFrame, UIListLayout, MinimizeButton, CreditsLabel = nil, nil, nil, nil, nil, nil
     isMinimized = false
     layoutOrder = 0
 end
